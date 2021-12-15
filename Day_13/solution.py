@@ -5,91 +5,70 @@ from typing import NewType
 
 
 def parse_input(input_lines):
-    grid = []
-    size_x = 0
-    size_y = 0
-    for line in input_lines:
-        if (line == "\n"):
-            break
-
-        splits = line.strip().split(",")
-        x = int(splits[0]) + 1
-        y = int(splits[1]) + 1
-        if (y > size_y):
-            size_y = y
-        if (x > size_x):
-            size_x = x
-
-    grid = []
-    for y in range(size_y):
-        grid.append(["."] * size_x)
-
-    is_getting_folds = False
-    folds = []
-    for line in input_lines:
-        if (line == "\n"):
-            is_getting_folds = True
-            continue
-
-        if (not is_getting_folds):
-            splits = line.strip().split(",")
-            x = int(splits[0])
-            y = int(splits[1])
-        else:
-            splits = line.strip().split('=')
-            folds.append([splits[0], int(splits[1])])
-
-        grid[y][x] = "#"
-
-    return (grid, folds)
+    template = input_lines[0].strip()
+    rules = []
+    for i in range(2, len(input_lines)):
+        line = input_lines[i]
+        rules.append(line.strip().split(" -> "))
+    return (template, rules)
 
 
-folder = "Day_13"
+folder = "Day_14"
 input_data = parse_input(open(f"{folder}/inputData.txt").readlines())
 test_data = parse_input(open(f"{folder}/Test.txt").readlines())
 
 
-def print_grid(grid):
-    for line in grid:
-        print("".join(line))
+def get_pairs(poly):
+    pairs = {}
+    for i in range(1, len(poly)):
+        pair = poly[i - 1] + poly[i]
+        if (pair not in pairs):
+            pairs[pair] = 0
+        pairs[pair] += 1
+    return pairs
+
+
+def get_element_comonalities(pairs):
+    counts = {}
+    for pair in pairs:
+        first = pair[0]
+        second = pair[1]
+        if (first not in counts):
+            counts[first] = 0
+        if (second not in counts):
+            counts[second] = 0
+        counts[first] += pairs[pair]
+        counts[second] += pairs[pair]
+
+    for letter in counts:
+        counts[letter] /= 2
+
+    return sorted(counts.values())
 
 
 def solve():
-    (grid, folds) = input_data
+    template, rules = input_data
+    pairs = get_pairs(template)
+    for i in range(40):
+        print(pairs)
+        print(sum(get_element_comonalities(pairs)))
+        print(get_element_comonalities(pairs))
+        new_pairs = pairs.copy()
+        for rule in rules:
+            if (rule[0] in pairs):
+                new_pair_1 = rule[0][0] + rule[1]
+                new_pair_2 = rule[1] + rule[0][1]
+                if (new_pair_1 not in new_pairs):
+                    new_pairs[new_pair_1] = 0
+                if (new_pair_2 not in new_pairs):
+                    new_pairs[new_pair_2] = 0
+                new_pairs[new_pair_1] += pairs[rule[0]]
+                new_pairs[new_pair_2] += pairs[rule[0]]
+                new_pairs[rule[0]] -= pairs[rule[0]]
+        pairs = new_pairs
 
-    for fold in folds:
-        index = fold[1]
-        is_x = "x" in fold[0]
-
-        if (is_x):
-            other_side = index - 1
-            for x in range(index + 1, len(grid[0])):
-                if (other_side < 0):
-                    break
-                for y in range(len(grid)):
-                    if (grid[y][x] == "#"):
-                        grid[y][other_side] = "#"
-                other_side -= 1
-            for i in range(len(grid)):
-                grid[i] = grid[i][0:index]
-        else:
-            other_side = index - 1
-            for y in range(index + 1, len(grid)):
-                if (other_side < 0):
-                    break
-                for x in range(len(grid[0])):
-                    if (grid[y][x] == "#"):
-                        grid[other_side][x] = "#"
-                other_side -= 1
-            grid = grid[0:index]
-
-    dot_count = 0
-    for line in grid:
-        dot_count += line.count("#")
-
-    print_grid(grid)
-    print(folds)
-    print(dot_count)
+    commons = get_element_comonalities(pairs)
+    print(commons[-1] - commons[0])
 
 
 solve()
